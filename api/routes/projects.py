@@ -7,8 +7,10 @@ Handles CRUD operations for projects and project-level operations.
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, status
+from pydantic import BaseModel, Field, HttpUrl
+
+from core.domain import FileType, UploadStatus
 
 from core.domain import SimpleProject, ProjectStatus
 from ..dependencies import (
@@ -47,10 +49,22 @@ class ProjectResponse(BaseModel):
     document_count: int = 0
 
 
-class ProjectDetailResponse(ProjectResponse):
-    """Detailed project response with related entities."""
-    sources: List[dict] = Field(default_factory=list)
-    recent_activity: List[dict] = Field(default_factory=list)
+class AddURLRequest(BaseModel):
+    """Request model for adding a URL document."""
+    url: HttpUrl = Field(..., description="URL to process")
+
+
+class DocumentResponse(BaseModel):
+    """Response model for document data."""
+    id: str
+    project_id: str
+    filename: str
+    file_type: FileType
+    file_size: Optional[int]
+    file_url: str
+    upload_status: UploadStatus
+    metadata: dict
+    created_at: datetime
 
 
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
@@ -255,3 +269,192 @@ async def process_project(
         "message": "Project processing has been queued",
         "estimated_completion": "2024-01-01T12:00:00Z",
     }
+
+
+# Document endpoints
+@router.post("/{project_id}/documents/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def upload_document(
+    project_id: UUID,
+    file: UploadFile = File(...),
+    current_user: CurrentUserDep = None,
+    project_repo: SimpleProjectRepositoryDep = None,
+    document_repo: DocumentRepositoryDep = None,
+):
+    """Upload a document file to a project."""
+
+    # Verify project exists
+    project = await project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Determine file type
+    filename = file.filename.lower()
+    if filename.endswith('.pdf'):
+        file_type = FileType.PDF
+    elif filename.endswith('.txt'):
+        file_type = FileType.TXT
+    elif filename.endswith('.docx'):
+        file_type = FileType.DOCX
+    elif filename.endswith('.md'):
+        file_type = FileType.MD
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+
+    # Read file content to get size
+    content = await file.read()
+    file_size = len(content)
+
+    # For now, store as base64 or just placeholder URL
+    # In production, upload to S3/cloud storage
+    import base64
+    file_url = f"data:{file.content_type};base64,{base64.b64encode(content).decode()}"
+
+    from uuid import uuid4
+    from core.domain import Document
+
+    # Create document entity
+    document = Document(
+        id=uuid4(),
+        project_id=project_id,
+        filename=file.filename,
+        file_type=file_type,
+        file_size=file_size,
+        file_url=file_url,
+    )
+
+    # Save to database
+    document = await document_repo.create(document)
+
+    return DocumentResponse(
+        id=str(document.id),
+        project_id=str(document.project_id),
+        filename=document.filename,
+        file_type=document.file_type,
+        file_size=document.file_size,
+        file_url=document.file_url,
+        upload_status=document.upload_status,
+        metadata=document.metadata,
+        created_at=document.created_at,
+    )
+
+
+@router.post("/{project_id}/documents/url", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def add_url_document(
+    project_id: UUID,
+    request: AddURLRequest,
+    current_user: CurrentUserDep,
+    project_repo: SimpleProjectRepositoryDep,
+    document_repo: DocumentRepositoryDep,
+):
+    """Add a URL document to a project."""
+
+    # Verify project exists
+    project = await project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from uuid import uuid4
+    from core.domain import Document
+
+    # Create document entity
+    document = Document(
+        id=uuid4(),
+        project_id=project_id,
+        filename=str(request.url),
+        file_type=FileType.PDF,  # Will be converted to PDF
+        file_url=str(request.url),
+    )
+
+    # Save to database
+    document = await document_repo.create(document)
+
+    return DocumentResponse(
+        id=str(document.id),
+        project_id=str(document.project_id),
+        filename=document.filename,
+        file_type=document.file_type,
+        file_size=document.file_size,
+        file_url=document.file_url,
+        upload_status=document.upload_status,
+        metadata=document.metadata,
+        created_at=document.created_at,
+    )
+
+
+@router.post("/{project_id}/documents/text", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def add_text_document(
+    project_id: UUID,
+    text: str = Form(...),
+    filename: str = Form(...),
+    current_user: CurrentUserDep = None,
+    project_repo: SimpleProjectRepositoryDep = None,
+    document_repo: DocumentRepositoryDep = None,
+):
+    """Add a text document to a project."""
+
+    # Verify project exists
+    project = await project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Encode text as data URL
+    import base64
+    encoded_text = base64.b64encode(text.encode()).decode()
+    file_url = f"data:text/plain;base64,{encoded_text}"
+
+    from uuid import uuid4
+    from core.domain import Document
+
+    # Create document entity
+    document = Document(
+        id=uuid4(),
+        project_id=project_id,
+        filename=filename,
+        file_type=FileType.TXT,
+        file_size=len(text),
+        file_url=file_url,
+    )
+
+    # Save to database
+    document = await document_repo.create(document)
+
+    return DocumentResponse(
+        id=str(document.id),
+        project_id=str(document.project_id),
+        filename=document.filename,
+        file_type=document.file_type,
+        file_size=document.file_size,
+        file_url=document.file_url,
+        upload_status=document.upload_status,
+        metadata=document.metadata,
+        created_at=document.created_at,
+    )
+
+
+@router.get("/{project_id}/documents", response_model=List[DocumentResponse])
+async def list_project_documents(
+    project_id: UUID,
+    current_user: CurrentUserDep,
+    project_repo: SimpleProjectRepositoryDep,
+    document_repo: DocumentRepositoryDep,
+):
+    """List all documents for a project."""
+
+    # Verify project exists
+    project = await project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    documents = await document_repo.get_by_project_id(project_id)
+
+    return [DocumentResponse(
+        id=str(d.id),
+        project_id=str(d.project_id),
+        filename=d.filename,
+        file_type=d.file_type,
+        file_size=d.file_size,
+        file_url=d.file_url,
+        upload_status=d.upload_status,
+        metadata=d.metadata,
+        created_at=d.created_at,
+    ) for d in documents]

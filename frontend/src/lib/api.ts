@@ -57,6 +57,53 @@ class ApiClient {
     })
   }
 
+  // Documents
+  async uploadDocument(projectId: string, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${this.baseUrl}/api/v1/projects/${projectId}/documents/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Unknown error' }))
+      throw new Error(error.message || `HTTP ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  async addUrlDocument(projectId: string, url: string) {
+    return this.request(`/api/v1/projects/${projectId}/documents/url`, {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    })
+  }
+
+  async addTextDocument(projectId: string, text: string, filename: string) {
+    const formData = new FormData()
+    formData.append('text', text)
+    formData.append('filename', filename)
+
+    const response = await fetch(`${this.baseUrl}/api/v1/projects/${projectId}/documents/text`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Unknown error' }))
+      throw new Error(error.message || `HTTP ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  async getProjectDocuments(projectId: string) {
+    return this.request(`/api/v1/projects/${projectId}/documents`)
+  }
+
   // Content Sources
   async addUrl(data: { project_id: string; url: string }) {
     return this.request('/api/v1/sources/url', {

@@ -20,7 +20,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -29,7 +29,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: any, session: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
