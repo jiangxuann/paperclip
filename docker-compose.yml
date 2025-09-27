@@ -1,0 +1,186 @@
+# Docker Compose configuration for Paperclip
+# Multi-container setup with database, cache, and application services
+
+version: '3.8'
+
+services:
+  # SurrealDB database
+  database:
+    image: surrealdb/surrealdb:v2.0.4
+    container_name: paperclip-db
+    command: start --log trace --user root --pass root file:///data/database.db
+    ports:
+      - "8001:8000"
+    volumes:
+      - surrealdb_data:/data
+    environment:
+      - SURREAL_BIND=0.0.0.0:8000
+      - SURREAL_USER=root
+      - SURREAL_PASS=root
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - paperclip-network
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: paperclip-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - paperclip-network
+
+  # Paperclip API server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: paperclip-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      
+      # Database
+      - DATABASE__URL=surrealdb://database:8000
+      - DATABASE__NAMESPACE=paperclip
+      - DATABASE__DATABASE=main
+      - DATABASE__USERNAME=root
+      - DATABASE__PASSWORD=root
+      
+      # Cache
+      - REDIS_URL=redis://redis:6379/0
+      
+      # AI Providers (set these in .env file)
+      - PROVIDERS__OPENAI__API_KEY=${OPENAI_API_KEY}
+      - PROVIDERS__ANTHROPIC__API_KEY=${ANTHROPIC_API_KEY}
+      - PROVIDERS__RUNWAY__API_KEY=${RUNWAY_API_KEY}
+      - PROVIDERS__PIKA__API_KEY=${PIKA_API_KEY}
+      - PROVIDERS__LUMA__API_KEY=${LUMA_API_KEY}
+      
+      # File storage
+      - UPLOAD_DIR=/app/uploads
+      - OUTPUT_DIR=/app/output
+      - VIDEO_OUTPUT_DIR=/app/output/videos
+      
+      # Logging
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    volumes:
+      - uploads_data:/app/uploads
+      - output_data:/app/output
+      - logs_data:/app/logs
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - paperclip-network
+
+  # Paperclip UI (Streamlit)
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: paperclip-ui
+    ports:
+      - "8501:8501"
+    environment:
+      - ENVIRONMENT=production
+      - API_URL=http://api:8000
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    command: ["streamlit", "run", "ui/main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - paperclip-network
+
+  # Background worker for async tasks
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: paperclip-worker
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      
+      # Database
+      - DATABASE__URL=surrealdb://database:8000
+      - DATABASE__NAMESPACE=paperclip
+      - DATABASE__DATABASE=main
+      - DATABASE__USERNAME=root
+      - DATABASE__PASSWORD=root
+      
+      # Cache
+      - REDIS_URL=redis://redis:6379/0
+      
+      # AI Providers
+      - PROVIDERS__OPENAI__API_KEY=${OPENAI_API_KEY}
+      - PROVIDERS__ANTHROPIC__API_KEY=${ANTHROPIC_API_KEY}
+      - PROVIDERS__RUNWAY__API_KEY=${RUNWAY_API_KEY}
+      - PROVIDERS__PIKA__API_KEY=${PIKA_API_KEY}
+      - PROVIDERS__LUMA__API_KEY=${LUMA_API_KEY}
+    volumes:
+      - uploads_data:/app/uploads
+      - output_data:/app/output
+      - logs_data:/app/logs
+    command: ["python", "-m", "celery", "worker", "-A", "worker.celery", "--loglevel=info"]
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - paperclip-network
+
+# Named volumes for data persistence
+volumes:
+  surrealdb_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads_data:
+    driver: local
+  output_data:
+    driver: local
+  logs_data:
+    driver: local
+
+# Network for service communication
+networks:
+  paperclip-network:
+    driver: bridge
