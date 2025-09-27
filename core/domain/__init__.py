@@ -16,7 +16,12 @@ from .entities import (
     ProcessingStatus,
     ContentType,
     VideoProvider,
-    ScriptTemplate
+    ScriptTemplate,
+    SimpleProject,
+    Document,
+    ProjectStatus,
+    FileType,
+    UploadStatus
 )
 
 from .value_objects import (
@@ -35,37 +40,46 @@ from .repositories import (
     ContentSourceRepository,
     ChapterRepository,
     ScriptRepository,
-    VideoRepository
+    VideoRepository,
+    SimpleProjectRepository,
+    DocumentRepository
 )
 
 __all__ = [
     # Entities
     "Project",
-    "ContentSource", 
+    "ContentSource",
     "PDFSource",
     "URLSource",
     "Chapter",
-    "Script", 
+    "Script",
     "Video",
     "ProcessingStatus",
     "ContentType",
     "VideoProvider",
     "ScriptTemplate",
-    
+    "SimpleProject",
+    "Document",
+    "ProjectStatus",
+    "FileType",
+    "UploadStatus",
+
     # Value Objects
     "ProjectId",
-    "SourceId", 
+    "SourceId",
     "ChapterId",
     "ScriptId",
     "VideoId",
     "ContentMetadata",
     "VideoConfig",
     "ScriptConfig",
-    
+
     # Repositories
     "ProjectRepository",
     "ContentSourceRepository",
-    "ChapterRepository", 
+    "ChapterRepository",
     "ScriptRepository",
     "VideoRepository",
+    "SimpleProjectRepository",
+    "DocumentRepository",
 ]

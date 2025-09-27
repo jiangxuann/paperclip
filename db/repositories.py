@@ -894,4 +894,205 @@ class PostgresVideoRepository(VideoRepository):
     async def update(self, video: Video) -> Video: pass
     async def delete(self, video_id: VideoId) -> None: pass
     async def get_processing_videos(self) -> List[Video]: pass
-    async def get_completed_videos(self, project_id: ProjectId) -> List[Video]: passc
+    async def get_completed_videos(self, project_id: ProjectId) -> List[Video]: pass
+
+
+# Structured Content Repositories for text extraction
+
+class DocumentPageRepository(ABC):
+    """Repository for document pages."""
+
+    @abstractmethod
+    async def create(self, document_id: UUID, page_number: int, text_content: Optional[str] = None, metadata: Optional[Dict] = None) -> UUID:
+        """Create a document page."""
+        pass
+
+    @abstractmethod
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        """Get all pages for a document."""
+        pass
+
+
+class ContentBlockRepository(ABC):
+    """Repository for content blocks (headings, paragraphs, etc.)."""
+
+    @abstractmethod
+    async def create_batch(self, blocks: List[Dict]) -> List[UUID]:
+        """Create multiple content blocks."""
+        pass
+
+    @abstractmethod
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        """Get all content blocks for a document."""
+        pass
+
+
+class MediaAssetRepository(ABC):
+    """Repository for media assets (images, charts, etc.)."""
+
+    @abstractmethod
+    async def create_batch(self, assets: List[Dict]) -> List[UUID]:
+        """Create multiple media assets."""
+        pass
+
+    @abstractmethod
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        """Get all media assets for a document."""
+        pass
+
+
+class ExtractedEntityRepository(ABC):
+    """Repository for extracted entities (statistics, quotes, etc.)."""
+
+    @abstractmethod
+    async def create_batch(self, entities: List[Dict]) -> List[UUID]:
+        """Create multiple extracted entities."""
+        pass
+
+    @abstractmethod
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        """Get all extracted entities for a document."""
+        pass
+
+
+class PostgresDocumentPageRepository(DocumentPageRepository):
+    """PostgreSQL implementation of DocumentPageRepository."""
+
+    def __init__(self, db: DatabaseConnection):
+        self.db = db
+
+    async def create(self, document_id: UUID, page_number: int, text_content: Optional[str] = None, metadata: Optional[Dict] = None) -> UUID:
+        conn = await self.db.get_connection()
+        try:
+            row = await conn.fetchrow("""
+                INSERT INTO document_pages (id, document_id, page_number, text_content, metadata, created_at, updated_at)
+                VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
+                RETURNING id
+            """, document_id, page_number, text_content, metadata or {})
+            return row['id']
+        finally:
+            await self.db.pool.release(conn)
+
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        conn = await self.db.get_connection()
+        try:
+            rows = await conn.fetch("""
+                SELECT id, document_id, page_number, text_content, metadata, created_at, updated_at
+                FROM document_pages
+                WHERE document_id = $1
+                ORDER BY page_number
+            """, document_id)
+            return [dict(row) for row in rows]
+        finally:
+            await self.db.pool.release(conn)
+
+
+class PostgresContentBlockRepository(ContentBlockRepository):
+    """PostgreSQL implementation of ContentBlockRepository."""
+
+    def __init__(self, db: DatabaseConnection):
+        self.db = db
+
+    async def create_batch(self, blocks: List[Dict]) -> List[UUID]:
+        conn = await self.db.get_connection()
+        try:
+            ids = []
+            for block in blocks:
+                row = await conn.fetchrow("""
+                    INSERT INTO content_blocks (id, document_id, page_id, block_type, order_index, text_content, bbox, metadata, created_at, updated_at)
+                    VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+                    RETURNING id
+                """, block['document_id'], block.get('page_id'), block['block_type'],
+                     block['order_index'], block.get('text_content'), block.get('bbox'), block.get('metadata', {}))
+                ids.append(row['id'])
+            return ids
+        finally:
+            await self.db.pool.release(conn)
+
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        conn = await self.db.get_connection()
+        try:
+            rows = await conn.fetch("""
+                SELECT id, document_id, page_id, block_type, order_index, text_content, bbox, metadata, created_at, updated_at
+                FROM content_blocks
+                WHERE document_id = $1
+                ORDER BY order_index
+            """, document_id)
+            return [dict(row) for row in rows]
+        finally:
+            await self.db.pool.release(conn)
+
+
+class PostgresMediaAssetRepository(MediaAssetRepository):
+    """PostgreSQL implementation of MediaAssetRepository."""
+
+    def __init__(self, db: DatabaseConnection):
+        self.db = db
+
+    async def create_batch(self, assets: List[Dict]) -> List[UUID]:
+        conn = await self.db.get_connection()
+        try:
+            ids = []
+            for asset in assets:
+                row = await conn.fetchrow("""
+                    INSERT INTO media_assets (id, document_id, page_id, source_block_id, media_type, file_url, width, height, format, size_bytes, checksum, metadata, created_at, updated_at)
+                    VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+                    RETURNING id
+                """, asset['document_id'], asset.get('page_id'), asset.get('source_block_id'),
+                     asset['media_type'], asset['file_url'], asset.get('width'), asset.get('height'),
+                     asset.get('format'), asset.get('size_bytes'), asset.get('checksum'), asset.get('metadata', {}))
+                ids.append(row['id'])
+            return ids
+        finally:
+            await self.db.pool.release(conn)
+
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        conn = await self.db.get_connection()
+        try:
+            rows = await conn.fetch("""
+                SELECT id, document_id, page_id, source_block_id, media_type, file_url, width, height, format, size_bytes, checksum, metadata, created_at, updated_at
+                FROM media_assets
+                WHERE document_id = $1
+                ORDER BY created_at
+            """, document_id)
+            return [dict(row) for row in rows]
+        finally:
+            await self.db.pool.release(conn)
+
+
+class PostgresExtractedEntityRepository(ExtractedEntityRepository):
+    """PostgreSQL implementation of ExtractedEntityRepository."""
+
+    def __init__(self, db: DatabaseConnection):
+        self.db = db
+
+    async def create_batch(self, entities: List[Dict]) -> List[UUID]:
+        conn = await self.db.get_connection()
+        try:
+            ids = []
+            for entity in entities:
+                row = await conn.fetchrow("""
+                    INSERT INTO extracted_entities (id, document_id, page_id, block_id, entity_type, raw_text, normalized, confidence, span_start, span_end, metadata, created_at)
+                    VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+                    RETURNING id
+                """, entity['document_id'], entity.get('page_id'), entity.get('block_id'),
+                     entity['entity_type'], entity.get('raw_text'), entity.get('normalized'),
+                     entity.get('confidence'), entity.get('span_start'), entity.get('span_end'),
+                     entity.get('metadata', {}))
+                ids.append(row['id'])
+            return ids
+        finally:
+            await self.db.pool.release(conn)
+
+    async def get_by_document_id(self, document_id: UUID) -> List[Dict]:
+        conn = await self.db.get_connection()
+        try:
+            rows = await conn.fetch("""
+                SELECT id, document_id, page_id, block_id, entity_type, raw_text, normalized, confidence, span_start, span_end, metadata, created_at
+                FROM extracted_entities
+                WHERE document_id = $1
+                ORDER BY created_at
+            """, document_id)
+            return [dict(row) for row in rows]
+        finally:
+            await self.db.pool.release(conn)

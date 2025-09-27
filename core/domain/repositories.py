@@ -6,7 +6,7 @@ for data persistence without coupling to specific implementations.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Dict
 from uuid import UUID
 
 from .entities import (

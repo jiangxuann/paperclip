@@ -30,6 +30,7 @@ class ContentType(str, Enum):
     """Types of content sources supported."""
     PDF = "pdf"
     URL = "url"
+    TEXT = "text"
 
 
 class VideoProvider(str, Enum):
@@ -212,31 +213,52 @@ class PDFSource(ContentSource):
         return self.title or self.file_path.split("/")[-1]
 
 
-@dataclass 
+@dataclass
 class URLSource(ContentSource):
     """
     Web URL content source.
-    
+
     Handles web scraping and URL-specific processing.
     """
     url: str = ""
     domain: Optional[str] = None
     scraped_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         self.content_type = ContentType.URL
         if self.url:
             self.domain = self._extract_domain(self.url)
-    
+
     def _extract_domain(self, url: str) -> str:
         """Extract domain from URL."""
         from urllib.parse import urlparse
         return urlparse(url).netloc
-    
+
     @property
     def display_name(self) -> str:
         """Get display name for this URL source."""
         return self.title or self.url
+
+
+@dataclass
+class TextSource(ContentSource):
+    """
+    Direct text content source.
+
+    Handles plain text or markdown content processing.
+    """
+    content: str = ""
+    word_count: Optional[int] = None
+
+    def __post_init__(self):
+        self.content_type = ContentType.TEXT
+        if self.content:
+            self.word_count = len(self.content.split())
+
+    @property
+    def display_name(self) -> str:
+        """Get display name for this text source."""
+        return self.title or f"Text content ({self.word_count or 0} words)"
 
 
 @dataclass
@@ -503,8 +525,8 @@ class SimpleProject:
     """
     id: UUID
     name: str
-    description: Optional[str] = None
     user_id: UUID
+    description: Optional[str] = None
     status: ProjectStatus = ProjectStatus.PROCESSING
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
@@ -521,8 +543,8 @@ class Document:
     project_id: UUID
     filename: str
     file_type: FileType
-    file_size: Optional[int] = None
     file_url: str
+    file_size: Optional[int] = None
     upload_status: UploadStatus = UploadStatus.UPLOADED
     metadata: Dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
