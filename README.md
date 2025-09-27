@@ -40,7 +40,7 @@ Paperclip follows a layered architecture with clear separation of concerns:
 │   Video Producer)                       │
 ├─────────────────────────────────────────┤
 │           Data Layer                    │
-│      (SurrealDB + File Storage)         │
+│  (Supabase Postgres + File Storage)     │
 └─────────────────────────────────────────┘
 ```
 
@@ -81,7 +81,7 @@ make dev
 |-----------|------------|---------|
 | **Backend** | FastAPI | REST API and business logic |
 | **Frontend** | Streamlit/React | User interface |
-| **Database** | SurrealDB | Document and metadata storage |
+| **Database** | Supabase (Postgres) | Relational storage for metadata |
 | **AI Models** | GPT-5, Claude | Content processing and generation |
 | **Video Generation** | Multiple providers | Video creation pipeline |
 | **Task Queue** | Celery + Redis | Async processing |
@@ -239,7 +239,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Inspired by the excellent architecture of [Open Notebook](https://github.com/lfnovo/open-notebook) and built on top of amazing open-source projects:
 
 - **FastAPI** - Modern web framework
-- **SurrealDB** - Multi-model database
+- **Supabase (Postgres)** - Managed Postgres with ecosystem
 - **Streamlit** - Rapid UI development
 - **LangChain** - AI model integration
 - **OpenAI** - Advanced language models
