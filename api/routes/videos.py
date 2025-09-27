@@ -4,17 +4,21 @@ Video generation and management API endpoints.
 Handles video generation from scripts, status monitoring, and video management.
 """
 
+import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Body
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
+
 from core.domain import VideoProvider, ProcessingStatus
 from ..dependencies import (
     CurrentUserDep,
     VideoRepositoryDep,
     VideoGeneratorDep,
+    VideoAnalyticsRepositoryDep,
 )
 
 router = APIRouter()
@@ -235,12 +239,20 @@ async def download_video(
     video_id: UUID,
     current_user: CurrentUserDep,
     video_repo: VideoRepositoryDep,
+    analytics_repo: VideoAnalyticsRepositoryDep,
 ):
     """Get download URL for a completed video."""
-    
+
+    # Track the download as a view (downloads count as views)
+    try:
+        await analytics_repo.increment_views(video_id, "download", 1)
+    except Exception as e:
+        # Log but don't fail the download if analytics tracking fails
+        logger.warning(f"Failed to track download analytics for video {video_id}: {e}")
+
     # TODO: Implement actual download logic
     # This would return a pre-signed URL or stream the file
-    
+
     return {
         "video_id": str(video_id),
         "download_url": f"https://api.paperclip.ai/videos/{video_id}/file",

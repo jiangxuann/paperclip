@@ -10,14 +10,11 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from core.domain import Project, ProjectId, ProcessingStatus
+from core.domain import SimpleProject, ProjectStatus
 from ..dependencies import (
     CurrentUserDep,
-    ProjectRepositoryDep,
-    SourceRepositoryDep,
-    ChapterRepositoryDep,
-    ScriptRepositoryDep,
-    VideoRepositoryDep,
+    SimpleProjectRepositoryDep,
+    DocumentRepositoryDep,
 )
 
 router = APIRouter()
@@ -28,14 +25,12 @@ class CreateProjectRequest(BaseModel):
     """Request model for creating a new project."""
     name: str = Field(..., min_length=1, max_length=200, description="Project name")
     description: Optional[str] = Field(None, max_length=1000, description="Project description")
-    config: dict = Field(default_factory=dict, description="Project configuration")
 
 
 class UpdateProjectRequest(BaseModel):
     """Request model for updating a project."""
     name: Optional[str] = Field(None, min_length=1, max_length=200, description="Project name")
     description: Optional[str] = Field(None, max_length=1000, description="Project description")
-    config: Optional[dict] = Field(None, description="Project configuration")
 
 
 class ProjectResponse(BaseModel):
@@ -43,16 +38,13 @@ class ProjectResponse(BaseModel):
     id: str
     name: str
     description: Optional[str]
-    status: ProcessingStatus
+    status: ProjectStatus
     created_at: datetime
     updated_at: datetime
-    config: dict
-    
+    user_id: str
+
     # Statistics
-    source_count: int = 0
-    chapter_count: int = 0
-    script_count: int = 0
-    video_count: int = 0
+    document_count: int = 0
 
 
 class ProjectDetailResponse(ProjectResponse):
@@ -65,21 +57,23 @@ class ProjectDetailResponse(ProjectResponse):
 async def create_project(
     request: CreateProjectRequest,
     current_user: CurrentUserDep,
-    project_repo: ProjectRepositoryDep,
+    project_repo: SimpleProjectRepositoryDep,
 ):
     """Create a new project."""
-    
+
+    from uuid import uuid4
+
     # Create project entity
-    project = Project(
-        id=ProjectId.generate(),
+    project = SimpleProject(
+        id=uuid4(),
         name=request.name,
         description=request.description,
-        config=request.config,
+        user_id=current_user["id"],
     )
-    
-    # TODO: Save to database
-    # project = await project_repo.create(project)
-    
+
+    # Save to database
+    project = await project_repo.create(project)
+
     return ProjectResponse(
         id=str(project.id),
         name=project.name,
@@ -87,54 +81,62 @@ async def create_project(
         status=project.status,
         created_at=project.created_at,
         updated_at=project.updated_at,
-        config=project.config,
+        user_id=str(project.user_id),
     )
 
 
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(
     current_user: CurrentUserDep,
-    project_repo: ProjectRepositoryDep,
+    project_repo: SimpleProjectRepositoryDep,
     skip: int = 0,
     limit: int = 20,
 ):
     """List all projects for the current user."""
-    
-    # TODO: Implement actual database query
-    # projects = await project_repo.get_by_user_id(current_user["id"], skip=skip, limit=limit)
-    
-    # Placeholder response
-    return []
+
+    from uuid import UUID
+
+    # Get projects for user
+    projects = await project_repo.get_by_user_id(UUID(current_user["id"]))
+
+    return [ProjectResponse(
+        id=str(p.id),
+        name=p.name,
+        description=p.description,
+        status=p.status,
+        created_at=p.created_at,
+        updated_at=p.updated_at,
+        user_id=str(p.user_id),
+    ) for p in projects]
 
 
-@router.get("/{project_id}", response_model=ProjectDetailResponse)
+@router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: UUID,
     current_user: CurrentUserDep,
-    project_repo: ProjectRepositoryDep,
-    source_repo: SourceRepositoryDep,
-    chapter_repo: ChapterRepositoryDep,
-    script_repo: ScriptRepositoryDep,
-    video_repo: VideoRepositoryDep,
+    project_repo: SimpleProjectRepositoryDep,
+    document_repo: DocumentRepositoryDep,
 ):
     """Get a specific project with details."""
-    
-    # TODO: Implement actual database query
-    # project = await project_repo.get_by_id(ProjectId(project_id))
-    # if not project:
-    #     raise HTTPException(status_code=404, detail="Project not found")
-    
-    # Placeholder response
-    return ProjectDetailResponse(
-        id=str(project_id),
-        name="Sample Project",
-        description="This is a placeholder project",
-        status=ProcessingStatus.PENDING,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        config={},
-        sources=[],
-        recent_activity=[],
+
+    # Get project
+    project = await project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Get document count
+    documents = await document_repo.get_by_project_id(project_id)
+    document_count = len(documents)
+
+    return ProjectResponse(
+        id=str(project.id),
+        name=project.name,
+        description=project.description,
+        status=project.status,
+        created_at=project.created_at,
+        updated_at=project.updated_at,
+        user_id=str(project.user_id),
+        document_count=document_count,
     )
 
 
@@ -143,35 +145,32 @@ async def update_project(
     project_id: UUID,
     request: UpdateProjectRequest,
     current_user: CurrentUserDep,
-    project_repo: ProjectRepositoryDep,
+    project_repo: SimpleProjectRepositoryDep,
 ):
     """Update a project."""
-    
-    # TODO: Implement actual database update
-    # project = await project_repo.get_by_id(ProjectId(project_id))
-    # if not project:
-    #     raise HTTPException(status_code=404, detail="Project not found")
-    
+
+    # Get project
+    project = await project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     # Update fields
-    # if request.name is not None:
-    #     project.name = request.name
-    # if request.description is not None:
-    #     project.description = request.description
-    # if request.config is not None:
-    #     project.config = request.config
-    
-    # project.updated_at = datetime.utcnow()
-    # project = await project_repo.update(project)
-    
-    # Placeholder response
+    if request.name is not None:
+        project.name = request.name
+    if request.description is not None:
+        project.description = request.description
+
+    project.updated_at = datetime.utcnow()
+    project = await project_repo.update(project)
+
     return ProjectResponse(
-        id=str(project_id),
-        name=request.name or "Updated Project",
-        description=request.description,
-        status=ProcessingStatus.PENDING,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        config=request.config or {},
+        id=str(project.id),
+        name=project.name,
+        description=project.description,
+        status=project.status,
+        created_at=project.created_at,
+        updated_at=project.updated_at,
+        user_id=str(project.user_id),
     )
 
 
@@ -179,18 +178,16 @@ async def update_project(
 async def delete_project(
     project_id: UUID,
     current_user: CurrentUserDep,
-    project_repo: ProjectRepositoryDep,
+    project_repo: SimpleProjectRepositoryDep,
 ):
     """Delete a project."""
-    
-    # TODO: Implement actual database deletion
-    # project = await project_repo.get_by_id(ProjectId(project_id))
-    # if not project:
-    #     raise HTTPException(status_code=404, detail="Project not found")
-    
-    # await project_repo.delete(ProjectId(project_id))
-    
-    pass
+
+    # Get project to verify it exists
+    project = await project_repo.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await project_repo.delete(project_id)
 
 
 @router.get("/{project_id}/stats")

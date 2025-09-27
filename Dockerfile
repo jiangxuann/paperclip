@@ -37,13 +37,13 @@ WORKDIR /app
 COPY pyproject.toml ./
 
 # Resolve and install dependencies into a local project venv (.venv)
-RUN uv sync --no-dev --extra ui
+RUN uv sync --no-dev
 
 # Copy rest of the application source
 COPY . .
 
 # Ensure the local project itself is installed into the environment
-RUN uv sync --no-dev --extra ui
+RUN uv sync --no-dev
 
 # ----------------------------
 # Production stage
@@ -85,8 +85,8 @@ USER paperclip
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
-# Expose ports for API and UI
-EXPOSE 8000 8501
+# Expose port for API
+EXPOSE 8000
 
 # Default command: run API via uv and the synced environment
 CMD ["uv", "run", "-m", "api.main"]

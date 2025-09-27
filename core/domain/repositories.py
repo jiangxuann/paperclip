@@ -9,7 +9,10 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-from .entities import Project, ContentSource, PDFSource, URLSource, Chapter, Script, Video
+from .entities import (
+    Project, ContentSource, PDFSource, URLSource, Chapter, Script, Video,
+    ProcessingJob, VideoAnalytics, ABTest, SimpleProject, Document
+)
 from .value_objects import ProjectId, SourceId, ChapterId, ScriptId, VideoId
 
 
@@ -215,4 +218,179 @@ class VideoRepository(ABC):
     @abstractmethod
     async def get_completed_videos(self, project_id: ProjectId) -> List[Video]:
         """Get all completed videos for a project."""
+        pass
+
+
+class ProcessingJobRepository(ABC):
+    """Repository interface for ProcessingJob entities."""
+
+    @abstractmethod
+    async def create(self, job: ProcessingJob) -> ProcessingJob:
+        """Create a new processing job."""
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, job_id: UUID) -> Optional[ProcessingJob]:
+        """Get job by ID."""
+        pass
+
+    @abstractmethod
+    async def get_by_project_id(self, project_id: ProjectId) -> List[ProcessingJob]:
+        """Get all jobs for a project."""
+        pass
+
+    @abstractmethod
+    async def get_by_status(self, status: str) -> List[ProcessingJob]:
+        """Get jobs by status."""
+        pass
+
+    @abstractmethod
+    async def get_queued_jobs(self, limit: int = 50) -> List[ProcessingJob]:
+        """Get queued jobs ordered by priority."""
+        pass
+
+    @abstractmethod
+    async def update(self, job: ProcessingJob) -> ProcessingJob:
+        """Update an existing job."""
+        pass
+
+    @abstractmethod
+    async def delete(self, job_id: UUID) -> None:
+        """Delete a job."""
+        pass
+
+    @abstractmethod
+    async def get_active_jobs_for_project(self, project_id: ProjectId) -> List[ProcessingJob]:
+        """Get active (queued/processing) jobs for a project."""
+        pass
+
+
+class VideoAnalyticsRepository(ABC):
+    """Repository interface for VideoAnalytics entities."""
+
+    @abstractmethod
+    async def create(self, analytics: VideoAnalytics) -> VideoAnalytics:
+        """Create a new analytics record."""
+        pass
+
+    @abstractmethod
+    async def get_by_video_id(self, video_id: VideoId) -> List[VideoAnalytics]:
+        """Get analytics for a specific video."""
+        pass
+
+    @abstractmethod
+    async def get_by_platform(self, video_id: VideoId, platform: str) -> Optional[VideoAnalytics]:
+        """Get analytics for a video on a specific platform."""
+        pass
+
+    @abstractmethod
+    async def increment_views(self, video_id: VideoId, platform: str, count: int = 1) -> VideoAnalytics:
+        """Increment view count for a video on a platform."""
+        pass
+
+    @abstractmethod
+    async def get_total_views(self, video_id: VideoId) -> int:
+        """Get total views across all platforms for a video."""
+        pass
+
+    @abstractmethod
+    async def get_platform_stats(self, video_id: VideoId) -> Dict[str, int]:
+        """Get view stats by platform for a video."""
+        pass
+
+
+class ABTestRepository(ABC):
+    """Repository interface for ABTest entities."""
+
+    @abstractmethod
+    async def create(self, test: ABTest) -> ABTest:
+        """Create a new A/B test."""
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, test_id: UUID) -> Optional[ABTest]:
+        """Get test by ID."""
+        pass
+
+    @abstractmethod
+    async def get_by_project_id(self, project_id: ProjectId) -> List[ABTest]:
+        """Get all tests for a project."""
+        pass
+
+    @abstractmethod
+    async def get_active_tests(self) -> List[ABTest]:
+        """Get all active (running) tests."""
+        pass
+
+    @abstractmethod
+    async def update(self, test: ABTest) -> ABTest:
+        """Update an existing test."""
+        pass
+
+    @abstractmethod
+    async def delete(self, test_id: UUID) -> None:
+        """Delete a test."""
+        pass
+
+    @abstractmethod
+    async def get_tests_by_video(self, video_id: VideoId) -> List[ABTest]:
+        """Get all tests that include a specific video."""
+        pass
+
+
+class SimpleProjectRepository(ABC):
+    """Repository interface for SimpleProject entities."""
+
+    @abstractmethod
+    async def create(self, project: SimpleProject) -> SimpleProject:
+        """Create a new simple project."""
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, project_id: UUID) -> Optional[SimpleProject]:
+        """Get project by ID."""
+        pass
+
+    @abstractmethod
+    async def get_by_user_id(self, user_id: UUID) -> List[SimpleProject]:
+        """Get all projects for a user."""
+        pass
+
+    @abstractmethod
+    async def update(self, project: SimpleProject) -> SimpleProject:
+        """Update an existing project."""
+        pass
+
+    @abstractmethod
+    async def delete(self, project_id: UUID) -> None:
+        """Delete a project."""
+        pass
+
+
+class DocumentRepository(ABC):
+    """Repository interface for Document entities."""
+
+    @abstractmethod
+    async def create(self, document: Document) -> Document:
+        """Create a new document."""
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, document_id: UUID) -> Optional[Document]:
+        """Get document by ID."""
+        pass
+
+    @abstractmethod
+    async def get_by_project_id(self, project_id: UUID) -> List[Document]:
+        """Get all documents for a project."""
+        pass
+
+    @abstractmethod
+    async def update(self, document: Document) -> Document:
+        """Update an existing document."""
+        pass
+
+    @abstractmethod
+    async def delete(self, document_id: UUID) -> None:
+        """Delete a document."""
         pass

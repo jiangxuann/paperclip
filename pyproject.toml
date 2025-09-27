@@ -97,8 +97,8 @@ dev = [
   "pre-commit>=3.5.0",
 ]
 
-# UI dependencies
-ui = ["streamlit>=1.28.0", "plotly>=5.17.0", "streamlit-aggrid>=0.3.4"]
+# UI dependencies (deprecated - using Next.js frontend)
+# ui = ["streamlit>=1.28.0", "plotly>=5.17.0", "streamlit-aggrid>=0.3.4"]
 
 # Production dependencies
 prod = ["gunicorn>=21.2.0", "supervisor>=4.2.5"]

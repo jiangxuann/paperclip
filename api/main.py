@@ -14,7 +14,7 @@ import logging
 from config import get_settings, setup_logging
 from config.logging import LoggingMiddleware
 from core.exceptions import ProcessingError
-from .routes import projects, sources, scripts, videos, health
+from .routes import projects, sources, scripts, videos, health, jobs, analytics, ab_tests
 from .middleware import ErrorHandlingMiddleware, TimingMiddleware
 
 
@@ -95,6 +95,9 @@ app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects"]
 app.include_router(sources.router, prefix="/api/v1/sources", tags=["Content Sources"])
 app.include_router(scripts.router, prefix="/api/v1/scripts", tags=["Scripts"])
 app.include_router(videos.router, prefix="/api/v1/videos", tags=["Videos"])
+app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["Processing Jobs"])
+app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Video Analytics"])
+app.include_router(ab_tests.router, prefix="/api/v1/ab-tests", tags=["A/B Tests"])
 
 
 # Global exception handlers

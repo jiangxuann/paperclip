@@ -6,7 +6,7 @@ into structured chapters and video scripts.
 """
 
 from .pdf import PDFProcessor
-from .url import URLProcessor  
+from .url import URLProcessor
 from .content import ContentAnalyzer, ChapterExtractor
 from .script import ScriptGenerator
 from .pipeline import ProcessingPipeline

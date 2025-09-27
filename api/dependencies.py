@@ -19,14 +19,19 @@ security = HTTPBearer(auto_error=False)
 async def get_database():
     """
     Get database connection.
-    
-    This is a placeholder for actual database dependency.
-    In a real implementation, this would provide a database session.
+
+    Provides a database connection instance for repositories.
     """
-    # TODO: Implement actual database connection
-    # For now, return a placeholder
-    # Using Postgres (Supabase-compatible) via asyncpg/SQLAlchemy in the future
-    return {"type": "supabase_postgres", "status": "connected"}
+    from config import get_settings
+    from db.repositories import DatabaseConnection
+
+    settings = get_settings()
+    db_config = settings.database
+
+    # Create database connection
+    db = DatabaseConnection(db_config.url)
+    await db.connect()
+    return db
 
 
 async def get_current_user(
@@ -127,11 +132,19 @@ async def get_video_generator():
     return VideoGenerator(config=provider_config)
 
 
-# Repository dependencies (placeholder for actual implementations)
-async def get_project_repository():
-    """Get project repository instance."""
-    # TODO: Implement actual repository
-    return {"type": "project_repository", "status": "placeholder"}
+# Repository dependencies
+async def get_simple_project_repository():
+    """Get simple project repository instance."""
+    from db.repositories import PostgresSimpleProjectRepository
+    db = await get_database()
+    return PostgresSimpleProjectRepository(db)
+
+
+async def get_document_repository():
+    """Get document repository instance."""
+    from db.repositories import PostgresDocumentRepository
+    db = await get_database()
+    return PostgresDocumentRepository(db)
 
 
 async def get_source_repository():
@@ -173,8 +186,49 @@ ScriptGeneratorDep = Annotated[object, Depends(get_script_generator)]
 VideoGeneratorDep = Annotated[object, Depends(get_video_generator)]
 
 # Repository dependencies
+SimpleProjectRepositoryDep = Annotated[object, Depends(get_simple_project_repository)]
+DocumentRepositoryDep = Annotated[object, Depends(get_document_repository)]
 ProjectRepositoryDep = Annotated[dict, Depends(get_project_repository)]
 SourceRepositoryDep = Annotated[dict, Depends(get_source_repository)]
 ChapterRepositoryDep = Annotated[dict, Depends(get_chapter_repository)]
 ScriptRepositoryDep = Annotated[dict, Depends(get_script_repository)]
 VideoRepositoryDep = Annotated[dict, Depends(get_video_repository)]
+
+# New repository dependencies (placeholder for actual implementations)
+async def get_processing_job_repository():
+    """Get processing job repository instance."""
+    # TODO: Implement actual repository
+    return {"type": "processing_job_repository", "status": "placeholder"}
+
+async def get_video_analytics_repository():
+    """Get video analytics repository instance."""
+    # TODO: Implement actual repository
+    return {"type": "video_analytics_repository", "status": "placeholder"}
+
+async def get_ab_test_repository():
+    """Get A/B test repository instance."""
+    # TODO: Implement actual repository
+    return {"type": "ab_test_repository", "status": "placeholder"}
+
+# New service dependencies
+async def get_processing_job_service():
+    """Get processing job service instance."""
+    from core.services import ProcessingJobService
+    # TODO: Initialize with actual repository
+    job_repo = await get_processing_job_repository()
+    return ProcessingJobService(job_repo)
+
+async def get_ab_test_service():
+    """Get A/B test service instance."""
+    from core.ab_test_service import ABTestService
+    # TODO: Initialize with actual repositories
+    ab_test_repo = await get_ab_test_repository()
+    analytics_repo = await get_video_analytics_repository()
+    return ABTestService(ab_test_repo, analytics_repo)
+
+# New repository dependencies
+ProcessingJobRepositoryDep = Annotated[dict, Depends(get_processing_job_repository)]
+VideoAnalyticsRepositoryDep = Annotated[dict, Depends(get_video_analytics_repository)]
+ABTestRepositoryDep = Annotated[dict, Depends(get_ab_test_repository)]
+ProcessingJobServiceDep = Annotated[object, Depends(get_processing_job_service)]
+ABTestServiceDep = Annotated[object, Depends(get_ab_test_service)]
