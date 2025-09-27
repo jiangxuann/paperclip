@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, HttpUrl
 from core.domain import ContentType, ProcessingStatus
 from ..dependencies import (
     CurrentUserDep,
-    SourceRepositoryDep,
+    # SourceRepositoryDep,
     PDFProcessorDep,
     URLProcessorDep,
 )
@@ -57,7 +57,7 @@ async def upload_pdf(
     title: Optional[str] = Form(None),
     file: UploadFile = File(...),
     current_user: CurrentUserDep = None,
-    source_repo: SourceRepositoryDep = None,
+    # source_repo: SourceRepositoryDep = None,
     pdf_processor: PDFProcessorDep = None,
 ):
     """Upload and process a PDF file."""
@@ -94,7 +94,7 @@ async def upload_pdf(
 async def add_url(
     request: AddURLRequest,
     current_user: CurrentUserDep,
-    source_repo: SourceRepositoryDep,
+    # source_repo: SourceRepositoryDep,
     url_processor: URLProcessorDep,
 ):
     """Add and process a URL source."""
@@ -123,7 +123,7 @@ async def add_url(
 async def get_source(
     source_id: UUID,
     current_user: CurrentUserDep,
-    source_repo: SourceRepositoryDep,
+    # source_repo: SourceRepositoryDep,
 ):
     """Get a specific content source."""
     
@@ -148,7 +148,7 @@ async def get_source(
 async def get_source_content(
     source_id: UUID,
     current_user: CurrentUserDep,
-    source_repo: SourceRepositoryDep,
+    # source_repo: SourceRepositoryDep,
 ):
     """Get processed content from a source."""
     
@@ -168,7 +168,7 @@ async def get_source_content(
 async def reprocess_source(
     source_id: UUID,
     current_user: CurrentUserDep,
-    source_repo: SourceRepositoryDep,
+    # source_repo: SourceRepositoryDep,
 ):
     """Reprocess a content source."""
     
@@ -184,7 +184,7 @@ async def reprocess_source(
 async def delete_source(
     source_id: UUID,
     current_user: CurrentUserDep,
-    source_repo: SourceRepositoryDep,
+    # source_repo: SourceRepositoryDep,
 ):
     """Delete a content source."""
     

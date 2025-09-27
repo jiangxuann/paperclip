@@ -4,6 +4,7 @@ Processing jobs API endpoints.
 Handles job management, status monitoring, and pipeline control.
 """
 
+import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from uuid import UUID
@@ -13,7 +14,8 @@ from pydantic import BaseModel, Field
 from core.domain.entities import JobType, JobStatus, ProjectId
 from ..dependencies import (
     CurrentUserDep,
-    ProcessingJobServiceDep,  # Will need to add this
+    ProcessingJobServiceDep,
+    ProcessingPipelineDep,
 )
 
 router = APIRouter()
@@ -149,13 +151,14 @@ async def start_job(
     background_tasks: BackgroundTasks,
     current_user: CurrentUserDep,
     job_service: ProcessingJobServiceDep,
+    pipeline: ProcessingPipelineDep,
 ):
     """Start a queued processing job."""
     try:
         job = await job_service.start_job(job_id)
 
         # Add background task to process the job
-        background_tasks.add_task(process_job_background, job_id, job_service)
+        background_tasks.add_task(process_job_background, job_id, job_service, pipeline)
 
         return {
             "job_id": str(job_id),
@@ -218,17 +221,14 @@ async def get_pipeline_status(
     project_id: UUID,
     current_user: CurrentUserDep,
     job_service: ProcessingJobServiceDep,
+    pipeline: ProcessingPipelineDep,
 ):
     """Get the pipeline status for a project."""
-    # This would need access to ProcessingPipeline
-    # For now, return job summary
-    summary = await job_service.get_job_status_summary(ProjectId(project_id))
+    pipeline_status = await pipeline.get_pipeline_status(ProjectId(project_id))
 
     return PipelineStatusResponse(
         project_id=str(project_id),
-        **summary,
-        pipeline_progress={},  # Would need pipeline access
-        next_step=None
+        **pipeline_status
     )
 
 
@@ -269,15 +269,18 @@ async def get_next_queued_job(
     }
 
 
-async def process_job_background(job_id: UUID, job_service: ProcessingJobServiceDep):
+async def process_job_background(job_id: UUID, job_service, pipeline):
     """Background task to process a job."""
-    # This would integrate with ProcessingPipeline
-    # For now, just simulate processing
-    import asyncio
-    await asyncio.sleep(5)  # Simulate work
-
-    # Mark as completed (in real implementation, this would be done by the pipeline)
     try:
-        await job_service.complete_job(job_id)
+        # Get the job
+        job = await job_service.job_repo.get_by_id(job_id)
+        if not job:
+            raise ValueError(f"Job {job_id} not found")
+
+        # Process the job using the pipeline
+        await pipeline.process_job(job)
+
     except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to process job {job_id}: {str(e)}")
         await job_service.fail_job(job_id, str(e))

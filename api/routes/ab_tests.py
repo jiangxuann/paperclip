@@ -166,9 +166,9 @@ async def update_ab_test(
 @router.post("/{test_id}/complete")
 async def complete_ab_test(
     test_id: UUID,
-    results: Dict[str, Any] = Body(..., description="Test results"),
     current_user: CurrentUserDep,
     ab_test_repo: ABTestRepositoryDep,
+    results: Dict[str, Any] = Body(..., description="Test results"),
 ):
     """Mark an A/B test as completed with results."""
     test = await ab_test_repo.get_by_id(test_id)

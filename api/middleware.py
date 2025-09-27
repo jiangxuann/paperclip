@@ -37,11 +37,12 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             return response
         
         except Exception as exc:
-            logger.exception(
-                "Unhandled exception in request",
-                path=request.url.path,
-                method=request.method,
-                client=request.client.host if request.client else None,
+            logger.error(
+                "Unhandled exception in request: %s %s from %s",
+                request.method,
+                request.url.path,
+                request.client.host if request.client else "unknown",
+                exc_info=True,
             )
             
             # Return generic error response
