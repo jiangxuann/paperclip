@@ -41,8 +41,11 @@ async def lifespan(app: FastAPI):
     # Validate configuration
     provider_validation = settings.providers.validate_configuration()
     if not provider_validation["valid"]:
-        logger.error(f"Provider configuration issues: {provider_validation['issues']}")
-        raise RuntimeError("Invalid provider configuration")
+        # Do not block startup if providers are missing; log prominently instead.
+        logger.warning(
+            "Provider configuration issues detected; continuing without AI providers: %s",
+            provider_validation["issues"],
+        )
     
     if provider_validation["warnings"]:
         for warning in provider_validation["warnings"]:
