@@ -37,13 +37,13 @@ WORKDIR /app
 COPY pyproject.toml ./
 
 # Resolve and install dependencies into a local project venv (.venv)
-RUN uv sync --no-dev
+RUN uv sync --no-dev --extra ui
 
 # Copy rest of the application source
 COPY . .
 
 # Ensure the local project itself is installed into the environment
-RUN uv sync --no-dev
+RUN uv sync --no-dev --extra ui
 
 # ----------------------------
 # Production stage
@@ -60,6 +60,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Create non-root user
 RUN groupadd -r paperclip && useradd -r -g paperclip paperclip
+
+# Create home directory for the user
+RUN mkdir -p /home/paperclip && chown -R paperclip:paperclip /home/paperclip
 
 WORKDIR /app
 
