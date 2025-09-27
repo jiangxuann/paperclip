@@ -100,7 +100,6 @@ CREATE TABLE IF NOT EXISTS documents (
   upload_status upload_status NOT NULL DEFAULT 'uploaded',
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
 CREATE INDEX IF NOT EXISTS idx_documents_upload_status ON documents(upload_status);
@@ -111,6 +110,8 @@ CREATE TRIGGER trg_documents_updated_at
 BEFORE UPDATE ON documents
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+-- Is this needed??
+--
 -- Document pages (structure preservation)
 CREATE TABLE IF NOT EXISTS document_pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
