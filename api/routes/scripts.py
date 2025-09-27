@@ -7,7 +7,7 @@ Handles script generation, retrieval, and management.
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Body
 from pydantic import BaseModel, Field
 
 from core.domain import ScriptTemplate, ProcessingStatus
@@ -136,7 +136,7 @@ To summarize what we've learned today..."""
 @router.put("/{script_id}", response_model=ScriptResponse)
 async def update_script(
     script_id: UUID,
-    content: str = Field(..., description="Updated script content"),
+    content: str = Body(..., description="Updated script content"),
     current_user: CurrentUserDep = None,
     script_repo: ScriptRepositoryDep = None,
 ):

@@ -7,7 +7,7 @@ Handles video generation from scripts, status monitoring, and video management.
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Body
 from pydantic import BaseModel, Field
 
 from core.domain import VideoProvider, ProcessingStatus
@@ -205,9 +205,9 @@ async def get_provider_status(
 
 @router.post("/estimate-cost")
 async def estimate_video_cost(
-    script_ids: List[UUID] = Field(..., description="List of script IDs"),
-    provider: Optional[VideoProvider] = Field(None, description="Video provider"),
-    config: dict = Field(default_factory=dict, description="Video configuration"),
+    script_ids: List[UUID] = Body(..., description="List of script IDs"),
+    provider: Optional[VideoProvider] = Body(None, description="Video provider"),
+    config: dict = Body(default_factory=dict, description="Video configuration"),
     video_generator: VideoGeneratorDep = None,
 ):
     """Estimate cost for generating videos from scripts."""
