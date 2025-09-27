@@ -57,8 +57,8 @@ class ProjectResponse(BaseModel):
 
 class ProjectDetailResponse(ProjectResponse):
     """Detailed project response with related entities."""
-    sources: List[dict] = []
-    recent_activity: List[dict] = []
+    sources: List[dict] = Field(default_factory=list)
+    recent_activity: List[dict] = Field(default_factory=list)
 
 
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)

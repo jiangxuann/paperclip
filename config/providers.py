@@ -6,7 +6,7 @@ used throughout the application.
 """
 
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class OpenAIConfig(BaseModel):
@@ -17,14 +17,13 @@ class OpenAIConfig(BaseModel):
     temperature: float = Field(0.7, description="Generation temperature")
     base_url: Optional[str] = Field(None, description="Custom base URL for OpenAI-compatible APIs")
     
-    @validator("temperature")
+    @field_validator("temperature")
     def validate_temperature(cls, v):
         if not 0 <= v <= 2:
             raise ValueError("Temperature must be between 0 and 2")
         return v
     
-    class Config:
-        env_prefix = "PROVIDERS_OPENAI_"
+    # env vars loaded via Settings; prefix not needed on nested models
 
 
 class AnthropicConfig(BaseModel):
@@ -34,14 +33,13 @@ class AnthropicConfig(BaseModel):
     max_tokens: int = Field(4000, description="Maximum tokens per request")
     temperature: float = Field(0.7, description="Generation temperature")
     
-    @validator("temperature")
+    @field_validator("temperature")
     def validate_temperature(cls, v):
         if not 0 <= v <= 1:
             raise ValueError("Temperature must be between 0 and 1")
         return v
     
-    class Config:
-        env_prefix = "PROVIDERS_ANTHROPIC_"
+    # env vars loaded via Settings; prefix not needed on nested models
 
 
 class RunwayConfig(BaseModel):
@@ -51,8 +49,7 @@ class RunwayConfig(BaseModel):
     max_duration: int = Field(10, description="Maximum video duration in seconds")
     default_aspect_ratio: str = Field("1280:768", description="Default aspect ratio")
     
-    class Config:
-        env_prefix = "PROVIDERS_RUNWAY_"
+    # env vars loaded via Settings; prefix not needed on nested models
 
 
 class PikaConfig(BaseModel):
@@ -61,8 +58,7 @@ class PikaConfig(BaseModel):
     max_duration: int = Field(3, description="Maximum video duration in seconds")
     default_aspect_ratio: str = Field("16:9", description="Default aspect ratio")
     
-    class Config:
-        env_prefix = "PROVIDERS_PIKA_"
+    # env vars loaded via Settings; prefix not needed on nested models
 
 
 class LumaConfig(BaseModel):
@@ -71,8 +67,7 @@ class LumaConfig(BaseModel):
     max_duration: int = Field(5, description="Maximum video duration in seconds")
     default_aspect_ratio: str = Field("16:9", description="Default aspect ratio")
     
-    class Config:
-        env_prefix = "PROVIDERS_LUMA_"
+    # env vars loaded via Settings; prefix not needed on nested models
 
 
 class TemplateConfig(BaseModel):
@@ -83,8 +78,7 @@ class TemplateConfig(BaseModel):
     enable_tts: bool = Field(True, description="Enable text-to-speech for narration")
     tts_voice: str = Field("en-US-AriaNeural", description="TTS voice to use")
     
-    class Config:
-        env_prefix = "PROVIDERS_TEMPLATE_"
+    # env vars loaded via Settings; prefix not needed on nested models
 
 
 class ProviderConfig(BaseModel):
@@ -111,14 +105,14 @@ class ProviderConfig(BaseModel):
     retry_attempts: int = Field(3, description="Number of retry attempts for failed API calls")
     retry_delay: float = Field(1.0, description="Delay between retry attempts in seconds")
     
-    @validator("default_ai_provider")
+    @field_validator("default_ai_provider")
     def validate_ai_provider(cls, v):
         valid_providers = ["openai", "anthropic"]
         if v not in valid_providers:
             raise ValueError(f"Default AI provider must be one of: {valid_providers}")
         return v
     
-    @validator("default_video_provider")
+    @field_validator("default_video_provider")
     def validate_video_provider(cls, v):
         valid_providers = ["runway", "pika", "luma", "template"]
         if v not in valid_providers:
@@ -200,5 +194,4 @@ class ProviderConfig(BaseModel):
             "available_video_providers": video_providers,
         }
     
-    class Config:
-        env_prefix = "PROVIDERS_"
+    # env vars loaded via Settings; prefix not needed on nested models

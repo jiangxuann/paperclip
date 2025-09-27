@@ -1,27 +1,21 @@
-# Docker Compose configuration for Paperclip
-# Multi-container setup with database, cache, and application services
-
-version: '3.8'
-
 services:
-  # SurrealDB database
-  database:
-    image: surrealdb/surrealdb:v2.0.4
+  # Supabase-compatible Postgres database
+  supabase-db:
+    image: postgres:15-alpine
     container_name: paperclip-db
-    command: start --log trace --user root --pass root file:///data/database.db
     ports:
-      - "8001:8000"
-    volumes:
-      - surrealdb_data:/data
+      - "5433:5432"
     environment:
-      - SURREAL_BIND=0.0.0.0:8000
-      - SURREAL_USER=root
-      - SURREAL_PASS=root
+      - POSTGRES_DB=paperclip
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U postgres -d paperclip"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
       start_period: 10s
     networks:
       - paperclip-network
@@ -56,29 +50,25 @@ services:
       - ENVIRONMENT=production
       - DEBUG=false
       - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
-      
+
       # Database
-      - DATABASE__URL=surrealdb://database:8000
-      - DATABASE__NAMESPACE=paperclip
-      - DATABASE__DATABASE=main
-      - DATABASE__USERNAME=root
-      - DATABASE__PASSWORD=root
-      
+      - DATABASE__URL=postgresql://postgres:postgres@supabase-db:5432/paperclip
+
       # Cache
       - REDIS_URL=redis://redis:6379/0
-      
+
       # AI Providers (set these in .env file)
       - PROVIDERS__OPENAI__API_KEY=${OPENAI_API_KEY}
       - PROVIDERS__ANTHROPIC__API_KEY=${ANTHROPIC_API_KEY}
       - PROVIDERS__RUNWAY__API_KEY=${RUNWAY_API_KEY}
       - PROVIDERS__PIKA__API_KEY=${PIKA_API_KEY}
       - PROVIDERS__LUMA__API_KEY=${LUMA_API_KEY}
-      
+
       # File storage
       - UPLOAD_DIR=/app/uploads
       - OUTPUT_DIR=/app/output
       - VIDEO_OUTPUT_DIR=/app/output/videos
-      
+
       # Logging
       - LOG_LEVEL=INFO
       - LOG_FORMAT=json
@@ -87,7 +77,7 @@ services:
       - output_data:/app/output
       - logs_data:/app/logs
     depends_on:
-      database:
+      supabase-db:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -114,7 +104,14 @@ services:
       - API_URL=http://api:8000
       - STREAMLIT_SERVER_PORT=8501
       - STREAMLIT_SERVER_ADDRESS=0.0.0.0
-    command: ["streamlit", "run", "ui/main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    command:
+      [
+        "streamlit",
+        "run",
+        "ui/main.py",
+        "--server.port=8501",
+        "--server.address=0.0.0.0",
+      ]
     depends_on:
       api:
         condition: service_healthy
@@ -137,17 +134,13 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
-      
+
       # Database
-      - DATABASE__URL=surrealdb://database:8000
-      - DATABASE__NAMESPACE=paperclip
-      - DATABASE__DATABASE=main
-      - DATABASE__USERNAME=root
-      - DATABASE__PASSWORD=root
-      
+      - DATABASE__URL=postgresql://postgres:postgres@supabase-db:5432/paperclip
+
       # Cache
       - REDIS_URL=redis://redis:6379/0
-      
+
       # AI Providers
       - PROVIDERS__OPENAI__API_KEY=${OPENAI_API_KEY}
       - PROVIDERS__ANTHROPIC__API_KEY=${ANTHROPIC_API_KEY}
@@ -158,9 +151,18 @@ services:
       - uploads_data:/app/uploads
       - output_data:/app/output
       - logs_data:/app/logs
-    command: ["python", "-m", "celery", "worker", "-A", "worker.celery", "--loglevel=info"]
+    command:
+      [
+        "python",
+        "-m",
+        "celery",
+        "worker",
+        "-A",
+        "worker.celery",
+        "--loglevel=info",
+      ]
     depends_on:
-      database:
+      supabase-db:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -169,7 +171,7 @@ services:
 
 # Named volumes for data persistence
 volumes:
-  surrealdb_data:
+  postgres_data:
     driver: local
   redis_data:
     driver: local

@@ -25,7 +25,8 @@ async def get_database():
     """
     # TODO: Implement actual database connection
     # For now, return a placeholder
-    return {"type": "surrealdb", "status": "connected"}
+    # Using Postgres (Supabase-compatible) via asyncpg/SQLAlchemy in the future
+    return {"type": "supabase_postgres", "status": "connected"}
 
 
 async def get_current_user(
@@ -108,17 +109,17 @@ async def get_video_generator():
         "providers": {
             "runway": {
                 "api_key": settings.providers.runway.api_key,
-                **settings.providers.runway.dict()
+                **settings.providers.runway.model_dump(),
             },
             "pika": {
                 "api_key": settings.providers.pika.api_key,
-                **settings.providers.pika.dict()
+                **settings.providers.pika.model_dump(),
             },
             "luma": {
                 "api_key": settings.providers.luma.api_key,
-                **settings.providers.luma.dict()
+                **settings.providers.luma.model_dump(),
             },
-            "template": settings.providers.template.dict(),
+            "template": settings.providers.template.model_dump(),
         },
         "output_dir": str(settings.video_output_dir),
     }

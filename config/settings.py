@@ -1,16 +1,16 @@
 """
 Application settings and configuration management.
 
-Uses Pydantic for settings validation and environment variable loading.
-Follows the Open Notebook pattern for configuration management.
+Pydantic v2 compatible settings using pydantic-settings.
 """
 
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-from pydantic import BaseSettings, Field, validator
-from pydantic.env_settings import SettingsSourceCallable
+from typing import Optional, List
+
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .database import DatabaseConfig
 from .providers import ProviderConfig
@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     enable_metrics: bool = Field(True, description="Enable metrics collection")
     metrics_port: int = Field(9090, description="Metrics server port")
     
-    @validator("upload_dir", "output_dir", "temp_dir", "video_output_dir", pre=True)
+    @field_validator("upload_dir", "output_dir", "temp_dir", "video_output_dir", mode="before")
     def create_directories(cls, v):
         """Ensure directories exist."""
         if isinstance(v, str):
@@ -91,7 +91,7 @@ class Settings(BaseSettings):
         v.mkdir(parents=True, exist_ok=True)
         return v
     
-    @validator("environment")
+    @field_validator("environment")
     def validate_environment(cls, v):
         """Validate environment value."""
         valid_envs = ["development", "staging", "production"]
@@ -99,7 +99,7 @@ class Settings(BaseSettings):
             raise ValueError(f"Environment must be one of: {valid_envs}")
         return v
     
-    @validator("log_level")
+    @field_validator("log_level")
     def validate_log_level(cls, v):
         """Validate log level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -107,25 +107,20 @@ class Settings(BaseSettings):
             raise ValueError(f"Log level must be one of: {valid_levels}")
         return v.upper()
     
-    @validator("cors_origins", pre=True)
+    @field_validator("cors_origins", mode="before")
     def parse_cors_origins(cls, v):
         """Parse CORS origins from string or list."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        env_nested_delimiter = "__"
-        case_sensitive = False
-        
-        # Custom environment variable names
-        fields = {
-            "secret_key": {"env": "SECRET_KEY"},
-            "cors_origins": {"env": "CORS_ORIGINS"},
-            "redis_url": {"env": "REDIS_URL"},
-        }
+
+    # pydantic-settings v2 configuration
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        case_sensitive=False,
+    )
     
     def get_database_url(self) -> str:
         """Get database connection URL."""
@@ -185,12 +180,8 @@ UI_PORT=8501
 SECRET_KEY=your-secret-key-here-change-this-in-production
 CORS_ORIGINS=*
 
-# Database
-DATABASE__URL=surrealdb://localhost:8000/paperclip
-DATABASE__NAMESPACE=paperclip
-DATABASE__DATABASE=main
-DATABASE__USERNAME=root
-DATABASE__PASSWORD=root
+# Database (Supabase-compatible Postgres)
+DATABASE__URL=postgresql://postgres:postgres@localhost:5433/paperclip
 
 # AI Providers (at least one required)
 PROVIDERS__OPENAI__API_KEY=your-openai-api-key

@@ -168,7 +168,9 @@ def _configure_third_party_loggers():
         logging.getLogger(logger_name).setLevel(logging.WARNING)
     
     # Set specific levels for important libraries
-    logging.getLogger("surrealdb").setLevel(logging.INFO)
+    # Database client loggers
+    logging.getLogger("asyncpg").setLevel(logging.INFO)
+    logging.getLogger("psycopg").setLevel(logging.INFO)
     logging.getLogger("openai").setLevel(logging.INFO)
     logging.getLogger("anthropic").setLevel(logging.INFO)
 

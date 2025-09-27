@@ -6,111 +6,121 @@ build-backend = "setuptools.build_meta"
 name = "paperclip"
 version = "0.1.0"
 description = "Transform PDFs and web content into engaging video content with AI"
-authors = [
-    {name = "Paperclip Team", email = "team@paperclip.ai"},
-]
+authors = [{ name = "Paperclip Team", email = "team@paperclip.ai" }]
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.11"
 keywords = ["ai", "video", "pdf", "content", "generation", "automation"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Education",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Multimedia :: Video",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Text Processing :: General",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Video",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Text Processing :: General",
 ]
 
 # Core dependencies
 dependencies = [
-    # Web framework
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
-    
-    # Database
-    "surrealdb>=1.0.4",
-    "asyncpg>=0.29.0",
-    
-    # AI and LLM integration
-    "openai>=1.0.0",
-    "anthropic>=0.8.0",
-    "langchain>=0.1.0",
-    "langchain-community>=0.0.10",
-    
-    # PDF processing
-    "PyPDF2>=3.0.1",
-    "pdfplumber>=0.10.0",
-    "pymupdf>=1.23.0",
-    
-    # Web scraping
-    "aiohttp>=3.9.0",
-    "beautifulsoup4>=4.12.0",
-    "trafilatura>=1.6.0",
-    "python-readability>=0.3.2",
-    
-    # Video processing (placeholder for future)
-    "moviepy>=1.0.3",
-    "ffmpeg-python>=0.2.0",
-    
-    # Data processing
-    "pandas>=2.1.0",
-    "numpy>=1.24.0",
-    
-    # Async and concurrency
-    "celery[redis]>=5.3.0",
-    "redis>=5.0.0",
-    
-    # Utilities
-    "pydantic>=2.5.0",
-    "python-multipart>=0.0.6",
-    "python-dotenv>=1.0.0",
-    "click>=8.1.0",
-    "rich>=13.7.0",
-    "structlog>=23.2.0",
-    
-    # File handling
-    "aiofiles>=23.2.1",
-    
-    # HTTP client
-    "httpx>=0.25.0",
+  # Web framework
+  "fastapi>=0.104.0",
+  "uvicorn[standard]>=0.24.0",
+
+  # Database
+  # Postgres (Supabase-compatible)
+  "asyncpg>=0.29.0",
+
+  # AI and LLM integration
+  "openai>=1.0.0",
+  "anthropic>=0.8.0",
+  "langchain>=0.1.0",
+  "langchain-community>=0.0.10",
+
+  # PDF processing
+  "PyPDF2>=3.0.1",
+  "pdfplumber>=0.10.0",
+  "pymupdf>=1.23.0",
+
+  # Web scraping
+  "aiohttp>=3.9.0",
+  "beautifulsoup4>=4.12.0",
+  "trafilatura>=1.6.0",
+  # 0.3.2+ are not available as stable releases; allow latest stable
+  "python-readability<=0.3.1",
+
+  # Video processing (placeholder for future)
+  "moviepy>=1.0.3",
+  "ffmpeg-python>=0.2.0",
+
+  # Data processing
+  "pandas>=2.1.0",
+  "numpy>=1.24.0",
+
+  # Async and concurrency
+  "celery[redis]>=5.3.0",
+  "redis>=5.0.0",
+
+  # Utilities
+  "pydantic>=2.5.0",
+  "pydantic-settings>=2.2.0",
+  "python-multipart>=0.0.6",
+  "python-dotenv>=1.0.0",
+  "click>=8.1.0",
+  "rich>=13.7.0",
+  "structlog>=23.2.0",
+
+  # File handling
+  "aiofiles>=23.2.1",
+
+  # HTTP client
+  "httpx>=0.25.0",
 ]
 
 [project.optional-dependencies]
 # Development dependencies
 dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.1.0",
-    "pytest-mock>=3.12.0",
-    "black>=23.9.0",
-    "isort>=5.12.0",
-    "flake8>=6.1.0",
-    "mypy>=1.6.0",
-    "pre-commit>=3.5.0",
+  "pytest>=7.4.0",
+  "pytest-asyncio>=0.21.0",
+  "pytest-cov>=4.1.0",
+  "pytest-mock>=3.12.0",
+  "black>=23.9.0",
+  "isort>=5.12.0",
+  "flake8>=6.1.0",
+  "mypy>=1.6.0",
+  "pre-commit>=3.5.0",
 ]
 
 # UI dependencies
-ui = [
-    "streamlit>=1.28.0",
-    "plotly>=5.17.0",
-    "streamlit-aggrid>=0.3.4",
-]
+ui = ["streamlit>=1.28.0", "plotly>=5.17.0", "streamlit-aggrid>=0.3.4"]
 
 # Production dependencies
-prod = [
-    "gunicorn>=21.2.0",
-    "supervisor>=4.2.5",
-]
+prod = ["gunicorn>=21.2.0", "supervisor>=4.2.5"]
 
 # All optional dependencies
+# Note: extras cannot reference the project itself. Aggregate explicitly.
 all = [
-    "paperclip[dev,ui,prod]",
+  # dev
+  "pytest>=7.4.0",
+  "pytest-asyncio>=0.21.0",
+  "pytest-cov>=4.1.0",
+  "pytest-mock>=3.12.0",
+  "black>=23.9.0",
+  "isort>=5.12.0",
+  "flake8>=6.1.0",
+  "mypy>=1.6.0",
+  "pre-commit>=3.5.0",
+  # ui
+  "streamlit>=1.28.0",
+  "plotly>=5.17.0",
+  "streamlit-aggrid>=0.3.4",
+  # prod
+  "gunicorn>=21.2.0",
+  "supervisor>=4.2.5",
 ]
 
 [project.urls]
@@ -131,11 +141,7 @@ include = ["paperclip*"]
 exclude = ["tests*", "docs*"]
 
 [tool.setuptools.package-data]
-paperclip = [
-    "templates/**/*",
-    "static/**/*",
-    "config/**/*",
-]
+paperclip = ["templates/**/*", "static/**/*", "config/**/*"]
 
 # Black code formatting
 [tool.black]
@@ -184,14 +190,14 @@ strict_equality = true
 
 [[tool.mypy.overrides]]
 module = [
-    "PyPDF2.*",
-    "pdfplumber.*",
-    "pymupdf.*",
-    "trafilatura.*",
-    "readability.*",
-    "moviepy.*",
-    "ffmpeg.*",
-    "surrealdb.*",
+  "PyPDF2.*",
+  "pdfplumber.*",
+  "pymupdf.*",
+  "trafilatura.*",
+  "readability.*",
+  "moviepy.*",
+  "ffmpeg.*",
+  "asyncpg.*",
 ]
 ignore_missing_imports = true
 
@@ -199,45 +205,37 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = [
-    "-ra",
-    "--strict-markers",
-    "--strict-config",
-    "--cov=paperclip",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+  "--cov=paperclip",
+  "--cov-report=term-missing",
+  "--cov-report=html",
+  "--cov-report=xml",
 ]
 testpaths = ["tests"]
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-]
+filterwarnings = ["error", "ignore::UserWarning", "ignore::DeprecationWarning"]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests as integration tests",
+  "unit: marks tests as unit tests",
 ]
 
 # Coverage configuration
 [tool.coverage.run]
 source = ["paperclip"]
-omit = [
-    "*/tests/*",
-    "*/test_*.py",
-    "*/conftest.py",
-]
+omit = ["*/tests/*", "*/test_*.py", "*/conftest.py"]
 
 [tool.coverage.report]
 exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
+  "pragma: no cover",
+  "def __repr__",
+  "if self.debug:",
+  "if settings.DEBUG",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod",
 ]
