@@ -4,8 +4,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
 // Only create real client if we have valid URLs (not placeholders)
-export const supabase = supabaseUrl.includes('placeholder') || supabaseAnonKey.includes('placeholder')
-  ? ({
+export const supabase = (() => {
+  // Check if we're in a browser environment and have valid URLs
+  const isBrowser = typeof window !== 'undefined'
+  const hasValidUrls = !supabaseUrl.includes('placeholder') && !supabaseAnonKey.includes('placeholder')
+
+  if (!isBrowser || !hasValidUrls) {
+    return {
       auth: {
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
@@ -18,14 +23,17 @@ export const supabase = supabaseUrl.includes('placeholder') || supabaseAnonKey.i
           })
         })
       }),
-    } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-  : createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
-    })
+    } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  })
+})()
 
 // Types for our database schema
 export interface Project {

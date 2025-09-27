@@ -17,9 +17,14 @@ from core.domain.entities import (
 from core.services import ProcessingJobService
 from .content import ContentAnalyzer, ChapterExtractor
 from .script import ScriptGenerator
-from .pdf import PDFProcessor
+from .pdf.structured_processor import StructuredPDFProcessor
 from .url import URLProcessor
+from .text import TextProcessor
 from generators.video import VideoGenerator
+from db.repositories import (
+    PostgresDocumentPageRepository, PostgresContentBlockRepository,
+    PostgresMediaAssetRepository, PostgresExtractedEntityRepository
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +41,8 @@ class ProcessingPipeline:
                  content_analyzer: ContentAnalyzer,
                  chapter_extractor: ChapterExtractor,
                  script_generator: ScriptGenerator,
-                 pdf_processor: PDFProcessor,
-                 url_processor: URLProcessor,
-                 video_generator: VideoGenerator):
+                 video_generator: VideoGenerator,
+                 db_connection=None):
         """
         Initialize the processing pipeline.
 
@@ -47,17 +51,44 @@ class ProcessingPipeline:
             content_analyzer: Service for analyzing content
             chapter_extractor: Service for extracting chapters
             script_generator: Service for generating scripts
-            pdf_processor: Service for processing PDFs
-            url_processor: Service for processing URLs
             video_generator: Service for generating videos
+            db_connection: Database connection for structured processors
         """
         self.job_service = job_service
         self.content_analyzer = content_analyzer
         self.chapter_extractor = chapter_extractor
         self.script_generator = script_generator
-        self.pdf_processor = pdf_processor
-        self.url_processor = url_processor
         self.video_generator = video_generator
+        self.db_connection = db_connection
+
+        # Initialize structured processors if database is available
+        if db_connection:
+            from db.repositories import (
+                PostgresDocumentPageRepository, PostgresContentBlockRepository,
+                PostgresMediaAssetRepository, PostgresExtractedEntityRepository
+            )
+            self.page_repo = PostgresDocumentPageRepository(db_connection)
+            self.content_repo = PostgresContentBlockRepository(db_connection)
+            self.media_repo = PostgresMediaAssetRepository(db_connection)
+            self.entity_repo = PostgresExtractedEntityRepository(db_connection)
+
+            from .pdf.structured_processor import StructuredPDFProcessor
+            from .text import TextProcessor
+            self.pdf_processor = StructuredPDFProcessor(
+                self.page_repo, self.content_repo, self.media_repo, self.entity_repo
+            )
+            self.text_processor = TextProcessor(
+                self.page_repo, self.content_repo, self.media_repo, self.entity_repo
+            )
+        else:
+            # Fallback to basic processors
+            from .pdf import PDFProcessor
+            from .url import URLProcessor
+            self.pdf_processor = PDFProcessor()
+            self.text_processor = None
+
+        from .url import URLProcessor
+        self.url_processor = URLProcessor()
 
     async def process_project(self, project: Project) -> None:
         """
@@ -109,9 +140,17 @@ class ProcessingPipeline:
 
                 # Process based on source type
                 if source.content_type.value == "pdf":
-                    processed_content = await self.pdf_processor.process(source)
+                    processed_source = await self.pdf_processor.process(source)
+                    processed_content = processed_source.processed_content
                 elif source.content_type.value == "url":
-                    processed_content = await self.url_processor.process(source)
+                    processed_source = await self.url_processor.process_url(source)
+                    processed_content = processed_source.processed_content
+                elif source.content_type.value == "text":
+                    if self.text_processor:
+                        processed_source = await self.text_processor.process_text(source)
+                        processed_content = processed_source.processed_content
+                    else:
+                        raise ValueError("Text processor not available")
                 else:
                     raise ValueError(f"Unsupported content type: {source.content_type}")
 

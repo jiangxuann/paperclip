@@ -107,36 +107,47 @@ class URLProcessor:
     
     async def _do_process_url(self, source: URLSource) -> URLSource:
         """Internal URL processing logic."""
-        
+
+        # Check if this is a research paper URL that might have a PDF
+        pdf_url = await self._find_pdf_url(source.url)
+        if pdf_url:
+            logger.info(f"Found PDF URL for research paper: {pdf_url}")
+            # For now, we'll still process the HTML content
+            # In the future, we could download and process the PDF instead
+
         # Fetch content
         html_content, response_metadata = await self._fetch_content(source.url)
-        
+
         # Extract structured content
         content = await self._extract_content(html_content, source.url)
-        
+
         # Extract metadata
         metadata = await self._extract_metadata(html_content, source.url, response_metadata)
-        
+
+        # Add PDF URL to metadata if found
+        if pdf_url:
+            metadata["pdf_url"] = pdf_url
+
         # Update source with results
         source.raw_content = html_content
         source.metadata = ContentMetadata(metadata)
         source.scraped_at = datetime.utcnow()
-        
+
         # Set title if not already set
         if not source.title and metadata.get("title"):
             source.title = metadata["title"]
-        
+
         # Analyze content quality
         content_quality = self._analyze_content_quality(content)
         if content_quality["quality_score"] < 0.5:
             logger.warning(f"Low quality content extracted from {source.url}")
-        
+
         # Process content for better structure
         processed_content = await self._process_content(content)
-        
+
         source.mark_completed(processed_content)
         logger.info(f"Successfully processed URL: {source.url}")
-        
+
         return source
     
     async def _fetch_content(self, url: str) -> tuple[str, Dict[str, Any]]:
@@ -412,6 +423,70 @@ class URLProcessor:
         
         return processed_content
     
+    async def _find_pdf_url(self, url: str) -> Optional[str]:
+        """Find PDF URL for research paper pages."""
+        try:
+            # Check if this looks like a research paper site
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+
+            # Common research paper domains
+            research_domains = [
+                'arxiv.org', 'papers.nips.cc', 'aclweb.org', 'icml.cc',
+                'neurips.cc', 'cvpr.thecvf.com', 'iccv.thecvf.com',
+                'eccv.org', 'aaai.org', 'ijcai.org', 'openreview.net'
+            ]
+
+            is_research_site = any(domain.endswith(research_domain) for research_domain in research_domains)
+
+            if not is_research_site:
+                return None
+
+            # Fetch the page to look for PDF links
+            async with self.session.get(url) as response:
+                if response.status >= 400:
+                    return None
+
+                html_content = await response.text()
+
+            # Parse HTML to find PDF links
+            if "beautifulsoup" in self.extractors:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(html_content, 'html.parser')
+
+                # Look for PDF links
+                pdf_links = []
+
+                # Find all links
+                for link in soup.find_all('a', href=True):
+                    href = link['href']
+                    text = link.get_text().strip().lower()
+
+                    # Check if it's a PDF link
+                    if (href.lower().endswith('.pdf') or
+                        'pdf' in text or
+                        'download' in text):
+                        # Convert relative URLs to absolute
+                        full_url = urljoin(url, href)
+                        pdf_links.append((full_url, text))
+
+                # Prioritize links that are likely PDFs
+                for pdf_url, text in pdf_links:
+                    if pdf_url.lower().endswith('.pdf'):
+                        logger.info(f"Found PDF link: {pdf_url}")
+                        return pdf_url
+
+                # If no direct PDF links, check for common PDF patterns
+                for pdf_url, text in pdf_links:
+                    if 'pdf' in pdf_url.lower():
+                        return pdf_url
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"Failed to find PDF URL for {url}: {str(e)}")
+            return None
+
     def _is_valid_url(self, url: str) -> bool:
         """Check if URL is valid."""
         try:
