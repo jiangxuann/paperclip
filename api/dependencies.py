@@ -188,11 +188,12 @@ VideoGeneratorDep = Annotated[object, Depends(get_video_generator)]
 # Repository dependencies
 SimpleProjectRepositoryDep = Annotated[object, Depends(get_simple_project_repository)]
 DocumentRepositoryDep = Annotated[object, Depends(get_document_repository)]
-ProjectRepositoryDep = Annotated[dict, Depends(get_project_repository)]
-SourceRepositoryDep = Annotated[dict, Depends(get_source_repository)]
-ChapterRepositoryDep = Annotated[dict, Depends(get_chapter_repository)]
 ScriptRepositoryDep = Annotated[dict, Depends(get_script_repository)]
 VideoRepositoryDep = Annotated[dict, Depends(get_video_repository)]
+# Legacy repository dependencies (placeholder for now)
+# ProjectRepositoryDep = Annotated[dict, Depends(get_project_repository)]
+# SourceRepositoryDep = Annotated[dict, Depends(get_source_repository)]
+# ChapterRepositoryDep = Annotated[dict, Depends(get_chapter_repository)]
 
 # New repository dependencies (placeholder for actual implementations)
 async def get_processing_job_repository():
@@ -211,6 +212,30 @@ async def get_ab_test_repository():
     return {"type": "ab_test_repository", "status": "placeholder"}
 
 # New service dependencies
+async def get_processing_pipeline():
+    """Get processing pipeline instance."""
+    from processors.pipeline import ProcessingPipeline
+    from processors.content import ContentAnalyzer, ChapterExtractor
+    from processors.script import ScriptGenerator
+
+    # Get dependencies
+    job_service = await get_processing_job_service()
+    content_analyzer = await get_content_analyzer()
+    chapter_extractor = await get_chapter_extractor()
+    script_generator = await get_script_generator()
+    video_generator = await get_video_generator()
+    db = await get_database()
+
+    return ProcessingPipeline(
+        job_service=job_service,
+        content_analyzer=content_analyzer,
+        chapter_extractor=chapter_extractor,
+        script_generator=script_generator,
+        video_generator=video_generator,
+        db_connection=db
+    )
+
+
 async def get_processing_job_service():
     """Get processing job service instance."""
     from core.services import ProcessingJobService
@@ -232,3 +257,4 @@ VideoAnalyticsRepositoryDep = Annotated[dict, Depends(get_video_analytics_reposi
 ABTestRepositoryDep = Annotated[dict, Depends(get_ab_test_repository)]
 ProcessingJobServiceDep = Annotated[object, Depends(get_processing_job_service)]
 ABTestServiceDep = Annotated[object, Depends(get_ab_test_service)]
+ProcessingPipelineDep = Annotated[object, Depends(get_processing_pipeline)]

@@ -208,7 +208,7 @@ async def delete_project(
 async def get_project_stats(
     project_id: UUID,
     current_user: CurrentUserDep,
-    project_repo: ProjectRepositoryDep,
+    project_repo: SimpleProjectRepositoryDep,
 ):
     """Get project statistics."""
     
@@ -252,7 +252,7 @@ async def get_project_stats(
 async def process_project(
     project_id: UUID,
     current_user: CurrentUserDep,
-    project_repo: ProjectRepositoryDep,
+    project_repo: SimpleProjectRepositoryDep,
 ):
     """Start processing all sources in a project."""
     
