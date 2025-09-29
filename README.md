@@ -1,29 +1,29 @@
 # Paperclip 📎
 
-**Transform PDFs and Web Content into Engaging Video Content with AI**
+**Transform PDFs and Web Content into Engaging Video Content**
 
-Paperclip is an AI-powered content transformation platform that converts PDFs and web content into structured video scripts and generates professional videos. Built with a modular architecture inspired by Open Notebook, it provides a complete pipeline from content analysis to video production.
+Paperclip is a content transformation platform that converts PDFs and web content into structured video scripts and generates professional videos. Built with a modular architecture inspired by Open Notebook, it provides a complete pipeline from content analysis to video production.
 
-## 🚀 Features
+## Features
 
 ### Core Capabilities
-* **📄 Multi-Source Content Processing**: Advanced parsing of PDFs and web content with GPT-5
-* **🌐 URL Content Extraction**: Intelligent web scraping and content analysis
-* **📚 Smart Chapter Segmentation**: Logical content splitting based on document/article structure
-* **🎬 AI Script Generation**: Chapter-specific video scripts optimized for engagement
-* **🎥 Multi-Provider Video Generation**: Extensible video creation with multiple AI providers
-* **🔍 Content Analysis**: Deep semantic understanding of any content structure
-* **📊 Progress Tracking**: Real-time pipeline monitoring and status updates
+* **Multi-Source Content Processing**: Advanced parsing of PDFs and web content with GPT-5
+* **URL Content Extraction**: Intelligent web scraping and content analysis
+* **Smart Chapter Segmentation**: Logical content splitting based on document/article structure
+* **AI Script Generation**: Chapter-specific video scripts optimized for engagement
+* **Multi-Provider Video Generation**: Extensible video creation with multiple AI providers
+* **Content Analysis**: Deep semantic understanding of any content structure
+* **Progress Tracking**: Real-time pipeline monitoring and status updates
 
 ### Advanced Features
-* **🤖 Multi-Model AI Support**: GPT-5, Claude, and other leading AI models
-* **🎨 Customizable Templates**: Video script templates for different content types
-* **📐 Flexible Output Formats**: Multiple video formats and quality settings
-* **🔧 Extensible Pipeline**: Plugin architecture for custom processing steps
-* **🌐 REST API**: Complete programmatic access to all functionality
-* **📱 Modern UI**: Intuitive interface for managing projects and monitoring progress
+* **Multi-Model AI Support**: GPT-5, Claude, and other leading AI models
+* **Customizable Templates**: Video script templates for different content types
+* **Flexible Output Formats**: Multiple video formats and quality settings
+* **Extensible Pipeline**: Plugin architecture for custom processing steps
+* **REST API**: Complete programmatic access to all functionality
+* **Modern UI**: Intuitive interface for managing projects and monitoring progress
 
-## 🏗️ Architecture
+## Architecture
 
 Paperclip follows a layered architecture with clear separation of concerns:
 
@@ -44,7 +44,7 @@ Paperclip follows a layered architecture with clear separation of concerns:
 └─────────────────────────────────────────┘
 ```
 
-## 📚 Quick Start
+## Quick Start
 
 ### Using Docker (Recommended)
 
@@ -75,7 +75,7 @@ export DATABASE_URL="file://paperclip.db"
 make dev
 ```
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
@@ -87,7 +87,7 @@ make dev
 | **Task Queue** | Celery + Redis | Async processing |
 | **Storage** | MinIO/S3 | File and media storage |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 paperclip/
@@ -105,7 +105,7 @@ paperclip/
 └── scripts/                # Utility scripts
 ```
 
-## 🎯 Usage Examples
+## Usage Examples
 
 ### Basic PDF Processing
 
@@ -153,7 +153,7 @@ config = {
 project = client.create_project("Advanced Project", config=config)
 ```
 
-## 🔧 Development
+## Development
 
 ### Prerequisites
 - Python 3.11+
@@ -185,7 +185,7 @@ pytest
 make dev
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Docker Deployment
 
@@ -210,7 +210,7 @@ Paperclip supports deployment on major cloud platforms:
 
 See [deployment docs](docs/deployment.md) for detailed guides.
 
-## 📖 Documentation
+## Documentation
 
 - **[Getting Started](docs/getting-started.md)** - Quick start guide
 - **[API Reference](docs/api.md)** - Complete API documentation
@@ -219,7 +219,7 @@ See [deployment docs](docs/deployment.md) for detailed guides.
 - **[Configuration](docs/configuration.md)** - System configuration
 - **[Deployment](docs/deployment.md)** - Production deployment guides
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
@@ -230,11 +230,11 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Testing**: Expand test coverage
 - **Documentation**: Improve guides and examples
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Inspired by the excellent architecture of [Open Notebook](https://github.com/lfnovo/open-notebook) and built on top of amazing open-source projects:
 
